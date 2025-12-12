@@ -13,14 +13,13 @@ COPY . .
 RUN npm run build
 
 # --- Stage 2: Serve the Built Application with a lightweight server ---
-# If your app is a static site (like the output of Vite), an NGINX server is perfect.
 FROM nginx:alpine as production
 
 # Copy the built output from the 'build' stage into NGINX's web root
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Copy your NGINX config if you have one, otherwise use default
-# COPY nginx.conf /etc/nginx/conf.d/default.conf
+# --- ADD THIS LINE TO OVERWRITE DEFAULT NGINX CONFIG ---
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Expose the default HTTP port (NPM will handle this for you later)
 EXPOSE 80
