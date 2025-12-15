@@ -38,7 +38,7 @@ export default function BottomNav({ currentPage, onNavigate, onAddAction }: Bott
   return (
     <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 safe-bottom">
       <div className="relative">
-        <div className="absolute left-1/2 -translate-x-1/2 -top-7">
+        <div className="absolute left-1/2 -translate-x-1/2 -top-3">
           <button
             onClick={handleAddAction}
             className="w-14 h-14 bg-gradient-to-br from-red-500 to-red-600 rounded-full shadow-xl flex items-center justify-center active:scale-95 transition-transform"
