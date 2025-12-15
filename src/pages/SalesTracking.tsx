@@ -11,6 +11,29 @@ interface SalesTrackingProps {
   showToast?: (type: ToastType, message: string) => void;
 }
 
+interface StatCardProps {
+  label: string;
+  value: string;
+  icon: string;
+  bgColor: string;
+}
+
+function StatCard({ label, value, icon, bgColor }: StatCardProps) {
+  return (
+    <div className="card p-4 sm:p-6">
+      <div className="flex items-center justify-between">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs sm:text-sm text-gray-600 font-medium truncate">{label}</p>
+          <p className="text-xl sm:text-3xl font-bold mt-1 text-gray-900">{value}</p>
+        </div>
+        <div className={`w-10 h-10 sm:w-12 sm:h-12 ${bgColor} rounded-xl flex items-center justify-center flex-shrink-0 ml-2`}>
+          <span className="text-lg sm:text-2xl">{icon}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SalesTracking({ showToast }: SalesTrackingProps) {
   const currentDate = new Date();
   const [selectedMonth, setSelectedMonth] = useState(
@@ -20,6 +43,7 @@ export default function SalesTracking({ showToast }: SalesTrackingProps) {
   const [addSaleModalOpen, setAddSaleModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<SalesEvent | null>(null);
   const [editingEvent, setEditingEvent] = useState<SalesEvent | null>(null);
+  const [totalUnits, setTotalUnits] = useState(0);
 
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'];
@@ -28,6 +52,26 @@ export default function SalesTracking({ showToast }: SalesTrackingProps) {
 
   const year = parseInt(selectedMonth.split('-')[0]);
   const month = parseInt(selectedMonth.split('-')[1]) - 1;
+
+  useEffect(() => {
+    loadMonthStats();
+  }, [events]);
+
+  async function loadMonthStats() {
+    if (events.length === 0) {
+      setTotalUnits(0);
+      return;
+    }
+
+    const eventIds = events.map(e => e.id);
+    const { data: items } = await supabase
+      .from('sales_items')
+      .select('quantity_sold')
+      .in('sales_event_id', eventIds);
+
+    const units = items?.reduce((sum, item) => sum + item.quantity_sold, 0) || 0;
+    setTotalUnits(units);
+  }
 
   function previousMonth() {
     const newDate = new Date(year, month - 1);
@@ -68,6 +112,8 @@ export default function SalesTracking({ showToast }: SalesTrackingProps) {
 
   const days = getDaysInMonth();
   const monthRevenue = events.reduce((sum, e) => sum + e.total_revenue, 0);
+  const marketDays = events.length;
+  const avgPerMarket = marketDays > 0 ? monthRevenue / marketDays : 0;
 
   if (loading) {
     return (
@@ -91,6 +137,33 @@ export default function SalesTracking({ showToast }: SalesTrackingProps) {
           <Plus className="w-5 h-5" />
           <span className="hidden sm:inline">Add Sale</span>
         </button>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <StatCard
+          label="Total Units Sold"
+          value={totalUnits.toString()}
+          icon="📦"
+          bgColor="bg-orange-100"
+        />
+        <StatCard
+          label="Total Revenue"
+          value={`$${monthRevenue >= 1000 ? `${(monthRevenue / 1000).toFixed(1)}k` : monthRevenue.toFixed(0)}`}
+          icon="💰"
+          bgColor="bg-amber-100"
+        />
+        <StatCard
+          label="Average per Market"
+          value={`$${avgPerMarket >= 1000 ? `${(avgPerMarket / 1000).toFixed(1)}k` : avgPerMarket.toFixed(0)}`}
+          icon="📊"
+          bgColor="bg-yellow-100"
+        />
+        <StatCard
+          label="Market Days"
+          value={marketDays.toString()}
+          icon="📅"
+          bgColor="bg-orange-100"
+        />
       </div>
 
       <div className="card p-4 sm:p-6">
