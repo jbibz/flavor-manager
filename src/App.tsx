@@ -77,7 +77,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
       <Header currentPage={currentPage} onNavigate={setCurrentPage} />
-      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-7xl pb-24 md:pb-8">
+      <main className="container mx-auto px-3 sm:px-4 pt-6 pb-24 md:py-6 md:pb-8 max-w-7xl">
         {renderPage()}
       </main>
 
