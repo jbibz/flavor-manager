@@ -1,6 +1,6 @@
-import { LayoutDashboard, Package, DollarSign, BarChart3, Factory } from 'lucide-react';
+import { LayoutDashboard, Package, DollarSign, Factory } from 'lucide-react';
 
-type Page = 'dashboard' | 'inventory' | 'sales' | 'analytics' | 'production';
+type Page = 'dashboard' | 'inventory' | 'sales' | 'production';
 
 interface BottomNavProps {
   currentPage: string;
@@ -11,7 +11,6 @@ const navItems: { id: Page; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
   { id: 'inventory', label: 'Inventory', icon: Package },
   { id: 'sales', label: 'Sales', icon: DollarSign },
-  { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   { id: 'production', label: 'Production', icon: Factory }
 ];
 

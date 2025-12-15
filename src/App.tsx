@@ -3,7 +3,6 @@ import Dashboard from './pages/Dashboard';
 import Inventory from './pages/Inventory';
 import ProductDetail from './pages/ProductDetail';
 import SalesTracking from './pages/SalesTracking';
-import SalesAnalytics from './pages/SalesAnalytics';
 import Production from './pages/Production';
 import Header from './components/Header';
 import BottomNav from './components/BottomNav';
@@ -13,7 +12,7 @@ import QuickComponentModal from './components/QuickComponentModal';
 import AddSaleModal from './components/AddSaleModal';
 import Toast, { ToastMessage, createToast, ToastType } from './components/Toast';
 
-type Page = 'dashboard' | 'inventory' | 'sales' | 'analytics' | 'production' | 'product-detail';
+type Page = 'dashboard' | 'inventory' | 'sales' | 'production' | 'product-detail';
 type QuickAction = 'batch' | 'components' | 'sale' | null;
 
 function App() {
@@ -65,8 +64,6 @@ function App() {
         );
       case 'sales':
         return <SalesTracking key={refreshKey} showToast={showToast} />;
-      case 'analytics':
-        return <SalesAnalytics key={refreshKey} />;
       case 'production':
         return <Production key={refreshKey} />;
       default:
