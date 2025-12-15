@@ -11,6 +11,29 @@ interface AnalyticsData {
   salesTrend: { date: string; units: number; revenue: number }[];
 }
 
+interface StatCardProps {
+  label: string;
+  value: string;
+  icon: string;
+  bgColor: string;
+}
+
+function StatCard({ label, value, icon, bgColor }: StatCardProps) {
+  return (
+    <div className="card p-4 sm:p-6">
+      <div className="flex items-center justify-between">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs sm:text-sm text-gray-600 font-medium truncate">{label}</p>
+          <p className="text-xl sm:text-3xl font-bold mt-1 text-gray-900">{value}</p>
+        </div>
+        <div className={`w-10 h-10 sm:w-12 sm:h-12 ${bgColor} rounded-xl flex items-center justify-center flex-shrink-0 ml-2`}>
+          <span className="text-lg sm:text-2xl">{icon}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function SalesAnalytics() {
   const [dateFilter, setDateFilter] = useState('all');
   const [customStart, setCustomStart] = useState('');
@@ -182,26 +205,31 @@ export default function SalesAnalytics() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-orange-100">
-          <p className="text-sm text-gray-600 font-medium mb-1">Total Units Sold</p>
-          <p className="text-3xl font-bold text-gray-900">{data.totalUnits}</p>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-orange-100">
-          <p className="text-sm text-gray-600 font-medium mb-1">Total Revenue</p>
-          <p className="text-3xl font-bold text-gray-900">${data.totalRevenue.toFixed(2)}</p>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-orange-100">
-          <p className="text-sm text-gray-600 font-medium mb-1">Average per Market</p>
-          <p className="text-3xl font-bold text-gray-900">${data.avgPerMarket.toFixed(2)}</p>
-        </div>
-
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-orange-100">
-          <p className="text-sm text-gray-600 font-medium mb-1">Market Days</p>
-          <p className="text-3xl font-bold text-gray-900">{data.marketDays}</p>
-        </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <StatCard
+          label="Total Units Sold"
+          value={data.totalUnits.toString()}
+          icon="📦"
+          bgColor="bg-orange-100"
+        />
+        <StatCard
+          label="Total Revenue"
+          value={`$${data.totalRevenue >= 1000 ? `${(data.totalRevenue / 1000).toFixed(1)}k` : data.totalRevenue.toFixed(0)}`}
+          icon="💰"
+          bgColor="bg-amber-100"
+        />
+        <StatCard
+          label="Average per Market"
+          value={`$${data.avgPerMarket >= 1000 ? `${(data.avgPerMarket / 1000).toFixed(1)}k` : data.avgPerMarket.toFixed(0)}`}
+          icon="📊"
+          bgColor="bg-yellow-100"
+        />
+        <StatCard
+          label="Market Days"
+          value={data.marketDays.toString()}
+          icon="📅"
+          bgColor="bg-orange-100"
+        />
       </div>
 
       {data.productBreakdown.length === 0 ? (
