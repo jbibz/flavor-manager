@@ -72,7 +72,7 @@ export default function Toast({ toasts, onRemove }: ToastProps) {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 pointer-events-none" style={{ top: 'max(1rem, calc(env(safe-area-inset-top) + 0.5rem))' }}>
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 pointer-events-none safe-top">
       {toasts.map(toast => (
         <div key={toast.id} className="pointer-events-auto">
           <ToastItem toast={toast} onRemove={() => onRemove(toast.id)} />
