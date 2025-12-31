@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Trash2, DollarSign, Loader2, Package } from 'lucide-react';
 import { useProducts } from '../lib/hooks';
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 
 interface AddSaleModalProps {
   onClose: () => void;
@@ -76,49 +76,28 @@ export default function AddSaleModal({ onClose, onSave }: AddSaleModalProps) {
 
   async function handleSave() {
     setLoading(true);
-    const itemsWithStock = items.filter(item => item.startingStock > 0);
-    const totalRevenue = itemsWithStock.reduce((sum, item) => sum + item.subtotal, 0);
+    try {
+      const itemsWithStock = items.filter(item => item.startingStock > 0);
 
-    const { data: eventData } = await supabase
-      .from('sales_events')
-      .insert({
-        event_date: eventDate,
-        event_name: eventName,
-        total_revenue: totalRevenue,
-        notes
-      })
-      .select()
-      .single();
-
-    if (!eventData) {
-      setLoading(false);
-      return;
-    }
-
-    for (const item of itemsWithStock) {
-      await supabase.from('sales_items').insert({
-        sales_event_id: eventData.id,
+      const salesItems = itemsWithStock.map(item => ({
         product_id: item.productId,
         product_name: item.productName,
-        starting_stock: item.startingStock,
-        ending_stock: item.endingStock ?? item.startingStock,
         quantity_sold: item.quantitySold,
-        unit_price: item.unitPrice,
-        subtotal: item.subtotal
+        price_per_unit: item.unitPrice
+      }));
+
+      await api.sales.createEvent({
+        market_name: eventName,
+        event_date: eventDate,
+        items: salesItems
       });
 
-      if (item.endingStock !== null) {
-        await supabase
-          .from('products')
-          .update({
-            current_stock: item.endingStock,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', item.productId);
-      }
+      onSave();
+    } catch (error) {
+      console.error('Error saving sales event:', error);
+    } finally {
+      setLoading(false);
     }
-
-    onSave();
   }
 
   const itemsWithStock = items.filter(item => item.startingStock > 0);

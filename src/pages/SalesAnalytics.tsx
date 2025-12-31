@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { BarChart3, TrendingUp, PieChart } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 
 interface AnalyticsData {
   totalUnits: number;
@@ -81,55 +81,56 @@ export default function SalesAnalytics() {
       endDate = customEnd;
     }
 
-    let eventsQuery = supabase.from('sales_events').select('*');
-    if (startDate) {
-      eventsQuery = eventsQuery.gte('event_date', startDate).lte('event_date', endDate);
-    }
+    try {
+      let events = await api.sales.getEvents();
+      if (startDate && events) {
+        events = events.filter((e: any) => e.event_date >= startDate && e.event_date <= endDate);
+      }
 
-    const { data: events } = await eventsQuery;
-    const eventIds = events?.map(e => e.id) || [];
+      const eventIds = events?.map((e: any) => e.id) || [];
 
-    let itemsQuery = supabase.from('sales_items').select('*');
-    if (eventIds.length > 0) {
-      itemsQuery = itemsQuery.in('sales_event_id', eventIds);
-    } else if (startDate) {
-      itemsQuery = itemsQuery.eq('sales_event_id', 'none');
-    }
+      let items = await api.sales.getItems();
+      if (eventIds.length > 0 && items) {
+        items = items.filter((i: any) => eventIds.includes(i.sales_event_id));
+      } else if (startDate) {
+        items = [];
+      }
 
-    const { data: items } = await itemsQuery;
+      const totalRevenue = events?.reduce((sum: number, e: any) => sum + Number(e.total_revenue), 0) || 0;
+      const totalUnits = items?.reduce((sum: number, i: any) => sum + i.quantity_sold, 0) || 0;
+      const marketDays = events?.length || 0;
+      const avgPerMarket = marketDays > 0 ? totalRevenue / marketDays : 0;
 
-    const totalRevenue = events?.reduce((sum, e) => sum + Number(e.total_revenue), 0) || 0;
-    const totalUnits = items?.reduce((sum, i) => sum + i.quantity_sold, 0) || 0;
-    const marketDays = events?.length || 0;
-    const avgPerMarket = marketDays > 0 ? totalRevenue / marketDays : 0;
-
-    const productMap = new Map<string, { units: number; revenue: number }>();
-    items?.forEach(item => {
-      const existing = productMap.get(item.product_name) || { units: 0, revenue: 0 };
-      productMap.set(item.product_name, {
-        units: existing.units + item.quantity_sold,
-        revenue: existing.revenue + Number(item.subtotal)
+      const productMap = new Map<string, { units: number; revenue: number }>();
+      items?.forEach((item: any) => {
+        const existing = productMap.get(item.product_name) || { units: 0, revenue: 0 };
+        productMap.set(item.product_name, {
+          units: existing.units + item.quantity_sold,
+          revenue: existing.revenue + Number(item.subtotal)
+        });
       });
-    });
 
-    const productBreakdown = Array.from(productMap.entries())
-      .map(([name, data]) => ({ name, ...data }))
-      .sort((a, b) => b.units - a.units);
+      const productBreakdown = Array.from(productMap.entries())
+        .map(([name, data]) => ({ name, ...data }))
+        .sort((a, b) => b.units - a.units);
 
-    const salesTrend = events?.map(e => ({
-      date: e.event_date,
-      units: items?.filter(i => i.sales_event_id === e.id).reduce((sum, i) => sum + i.quantity_sold, 0) || 0,
-      revenue: Number(e.total_revenue)
-    })).sort((a, b) => a.date.localeCompare(b.date)) || [];
+      const salesTrend = events?.map((e: any) => ({
+        date: e.event_date,
+        units: items?.filter((i: any) => i.sales_event_id === e.id).reduce((sum: number, i: any) => sum + i.quantity_sold, 0) || 0,
+        revenue: Number(e.total_revenue)
+      })).sort((a: any, b: any) => a.date.localeCompare(b.date)) || [];
 
-    setData({
-      totalUnits,
-      totalRevenue,
-      avgPerMarket,
-      marketDays,
-      productBreakdown,
-      salesTrend
-    });
+      setData({
+        totalUnits,
+        totalRevenue,
+        avgPerMarket,
+        marketDays,
+        productBreakdown,
+        salesTrend
+      });
+    } catch (error) {
+      console.error('Error loading analytics:', error);
+    }
 
     setLoading(false);
   }
