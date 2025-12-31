@@ -1,14 +1,57 @@
 # Flavor Junkie - Self-Hosted Setup Guide
 
-This application now uses a self-hosted PostgreSQL database instead of Supabase, giving you full control over your data.
+This application uses a self-hosted PostgreSQL database, giving you full control over your data without any third-party dependencies.
 
 ## Prerequisites
 
-- Node.js 18+ installed
 - Docker and Docker Compose installed
-- Git (for cloning)
+- Git (for cloning the repository)
 
-## Quick Start
+**Note:** Node.js is NOT required if you use Docker for everything.
+
+## Quick Start with Docker (Recommended)
+
+### 1. Start Everything with Docker
+
+```bash
+docker compose up -d
+```
+
+This single command will:
+- Build the application Docker image
+- Start the PostgreSQL database
+- Run database migrations automatically
+- Start the application server
+- Serve the frontend and backend together
+
+### 2. Access the Application
+
+Open your browser to: **http://localhost:3001**
+
+That's it! Everything is running in Docker containers.
+
+### 3. View Logs
+
+```bash
+# View all logs
+docker compose logs -f
+
+# View app logs only
+docker compose logs -f app
+
+# View database logs only
+docker compose logs -f postgres
+```
+
+### 4. Stop Everything
+
+```bash
+docker compose down
+```
+
+## Development Setup (Without Docker)
+
+If you prefer to develop without Docker:
 
 ### 1. Install Dependencies
 
@@ -16,33 +59,13 @@ This application now uses a self-hosted PostgreSQL database instead of Supabase,
 npm install
 ```
 
-### 2. Start the PostgreSQL Database
+### 2. Start PostgreSQL Database Only
 
 ```bash
 npm run db:up
 ```
 
-This will start a PostgreSQL database in a Docker container. The database will automatically run the migrations on first startup.
-
-### 3. Configure Environment Variables
-
-The `.env` file is already configured with default values:
-
-```env
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=flavor_junkie
-DB_USER=postgres
-DB_PASSWORD=postgres
-
-VITE_API_URL=http://localhost:3001/api
-
-PORT=3001
-```
-
-For production, update these values with your actual database credentials.
-
-### 4. Start the Application
+### 3. Start Development Servers
 
 **Option A: Start both frontend and backend together**
 ```bash
@@ -61,19 +84,30 @@ Terminal 2 (Frontend):
 npm run dev
 ```
 
-### 5. Access the Application
+### 4. Access the Application
 
 - Frontend: http://localhost:5173
 - Backend API: http://localhost:3001
 
-## Available Scripts
+## Available Commands
+
+### Docker Commands (Recommended)
+
+- `docker compose up -d` - Start everything (database + app)
+- `docker compose down` - Stop everything
+- `docker compose down -v` - Stop and delete all data
+- `docker compose logs -f` - View logs
+- `docker compose restart app` - Restart just the app
+- `docker compose build --no-cache app` - Rebuild the app
+
+### NPM Scripts (Development)
 
 - `npm run dev` - Start frontend development server
 - `npm run dev:server` - Start backend API server
 - `npm run dev:all` - Start both frontend and backend
 - `npm run build` - Build frontend for production
 - `npm run server` - Start backend in production mode
-- `npm run db:up` - Start PostgreSQL database
+- `npm run db:up` - Start PostgreSQL database only
 - `npm run db:down` - Stop PostgreSQL database
 - `npm run db:reset` - Reset database (deletes all data)
 
@@ -116,62 +150,111 @@ The database includes these tables:
 
 ## Production Deployment
 
-### Using Your Own Server
+### Option 1: Deploy with Docker (Easiest)
+
+The application is already configured to run in production with Docker:
+
+1. Clone the repository on your server
+2. Edit `docker-compose.yml` to change default passwords
+3. Start everything:
+   ```bash
+   docker compose up -d
+   ```
+4. Access your app at `http://your-server:3001`
+
+**Important:** Change the default PostgreSQL password in `docker-compose.yml` before deploying to production!
+
+### Option 2: Deploy Without Docker
 
 1. Install PostgreSQL on your server
-2. Update `.env` with your database credentials
-3. Run migrations manually:
+2. Create a production `.env` file with your credentials
+3. Run migrations:
    ```bash
    psql -U your_user -d your_database -f supabase/migrations/20251202220748_create_flavor_junkie_schema.sql
    psql -U your_user -d your_database -f supabase/migrations/20251202220819_seed_initial_data.sql
    ```
-4. Build the frontend: `npm run build`
-5. Serve the `dist` folder with a web server (nginx, Apache, etc.)
-6. Run the backend: `npm run server`
+4. Build and run:
+   ```bash
+   npm install
+   npm run build
+   NODE_ENV=production npm run server
+   ```
 
-### Using Docker for Both App and Database
+### Using a Reverse Proxy (Recommended)
 
-You can extend the `docker-compose.yml` to include the application:
+For production, put the application behind nginx or Caddy:
 
+**Nginx Example:**
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    location / {
+        proxy_pass http://localhost:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+## Configuration
+
+### Environment Variables
+
+When using Docker, all configuration is in `docker-compose.yml`.
+
+For development, edit `.env`:
+```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=flavor_junkie
+DB_USER=postgres
+DB_PASSWORD=postgres
+PORT=3001
+```
+
+### Changing Ports
+
+To use a different port, edit `docker-compose.yml`:
 ```yaml
-services:
-  postgres:
-    # ... existing config ...
-
-  api:
-    build: .
-    ports:
-      - "3001:3001"
-    depends_on:
-      - postgres
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: flavor_junkie
-      DB_USER: postgres
-      DB_PASSWORD: postgres
+app:
+  ports:
+    - "8080:3001"  # Access on port 8080 instead
 ```
 
 ## Troubleshooting
 
+### Application won't start
+
+1. Check Docker is running: `docker ps`
+2. View logs: `docker compose logs -f app`
+3. Rebuild: `docker compose build --no-cache app`
+
 ### Database Connection Errors
 
-1. Make sure Docker is running
-2. Check if PostgreSQL container is running: `docker ps`
-3. Verify database is ready: `docker logs flavor-junkie-db`
+1. Ensure PostgreSQL is healthy: `docker compose ps`
+2. Check logs: `docker compose logs -f postgres`
+3. Reset database: `docker compose down -v && docker compose up -d`
 
 ### Port Already in Use
 
-If port 5432 or 3001 is already in use, update the ports in:
-- `docker-compose.yml` (for database)
-- `.env` (for API and database connection)
+If port 3001 is in use, change it in `docker-compose.yml`:
+```yaml
+app:
+  ports:
+    - "8080:3001"
+```
 
-### Data Migration from Supabase
+### Cannot connect from another machine
 
-If you were previously using Supabase, export your data:
-1. Go to Supabase dashboard
-2. Use SQL Editor to export each table
-3. Import into your local database
+If accessing from another device on your network:
+1. Find your server's IP address
+2. Open port 3001 in your firewall
+3. Access via `http://your-server-ip:3001`
 
 ## Security Notes
 

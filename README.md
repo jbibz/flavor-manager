@@ -1,4 +1,32 @@
-## Flavor Junkie CRM Project
+# Flavor Junkie CRM
 
-This project involves creating, deploying, and updating a CRM application built specifically for the needs of my small seasoning company.
-The goal is to deploy this CRM on my homelab server so I can deploy, edit, pull, and monitor the application. I built it around the needs I had when searching for a CRM and couldn’t find one that met them.
+A self-hosted CRM application built specifically for managing a small seasoning company. Track inventory, sales, production, and analytics - all running on your own server with full data control.
+
+## Features
+
+- Product inventory management
+- Sales tracking and analytics
+- Production batch management
+- Dashboard with real-time stats
+- Self-hosted PostgreSQL database
+- No third-party dependencies
+- Docker-ready deployment
+
+## Quick Start
+
+**Start everything with Docker:**
+
+```bash
+docker compose up -d
+```
+
+Access the application at **http://localhost:3001**
+
+For detailed setup instructions, see [README.setup.md](README.setup.md)
+
+## Tech Stack
+
+- Frontend: React + TypeScript + Vite + Tailwind CSS
+- Backend: Node.js + Express + PostgreSQL
+- Database: PostgreSQL 16
+- Deployment: Docker + Docker Compose

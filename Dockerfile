@@ -1,28 +1,26 @@
-# --- Stage 1: Build the Application ---
-FROM node:20-alpine as build
+# Stage 1: Build Frontend
+FROM node:20-alpine AS frontend-builder
 WORKDIR /app
 
-# Copy package files and install dependencies
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 
-# Copy all source files and build the app
 COPY . .
-# The build command might be different (e.g., 'npm run dev' or 'npm run start') 
-# but 'npm run build' is standard for production. Check the package.json if it fails.
 RUN npm run build
 
-# --- Stage 2: Serve the Built Application with a lightweight server ---
-FROM nginx:alpine as production
+# Stage 2: Production Runtime
+FROM node:20-alpine
+WORKDIR /app
 
-# Copy the built output from the 'build' stage into NGINX's web root
-COPY --from=build /app/dist /usr/share/nginx/html
+COPY package*.json ./
+RUN npm ci --only=production && npm cache clean --force
 
-# --- ADD THIS LINE TO OVERWRITE DEFAULT NGINX CONFIG ---
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=frontend-builder /app/dist ./dist
+COPY server ./server
+COPY supabase ./supabase
 
-# Expose the default HTTP port (NPM will handle this for you later)
-EXPOSE 80
+EXPOSE 3001
 
-# Start NGINX
-CMD ["nginx", "-g", "daemon off;"]
+ENV NODE_ENV=production
+
+CMD ["npm", "run", "server"]
