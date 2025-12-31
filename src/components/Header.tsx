@@ -1,4 +1,4 @@
-type Page = 'dashboard' | 'inventory' | 'sales' | 'production';
+type Page = 'dashboard' | 'inventory' | 'sales' | 'analytics' | 'production';
 
 interface HeaderProps {
   currentPage: string;
@@ -9,6 +9,7 @@ const navItems: { id: Page; label: string }[] = [
   { id: 'dashboard', label: 'Dashboard' },
   { id: 'inventory', label: 'Inventory' },
   { id: 'sales', label: 'Sales' },
+  { id: 'analytics', label: 'Analytics' },
   { id: 'production', label: 'Production' }
 ];
 

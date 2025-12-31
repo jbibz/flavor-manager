@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Save, Loader2 } from 'lucide-react';
 import { useProducts, useDashboardStats } from '../lib/hooks';
-import { supabase } from '../lib/supabase';
+import { api } from '../lib/api';
 import InventoryBox from '../components/InventoryBox';
 
 interface DashboardProps {
@@ -20,23 +20,32 @@ export default function Dashboard({ onProductClick }: DashboardProps) {
   }, []);
 
   async function loadNotes() {
-    const { data } = await supabase.from('dashboard_notes').select('*').limit(1).maybeSingle();
-    if (data) {
-      setNotes(data.content);
-      setNotesId(data.id);
+    try {
+      const data = await api.dashboard.getNotes();
+      if (data) {
+        setNotes(data.content);
+        setNotesId(data.id);
+      }
+    } catch (error) {
+      console.error('Error loading notes:', error);
     }
   }
 
   async function saveNotes() {
     setSaveStatus('saving');
-    if (notesId) {
-      await supabase.from('dashboard_notes').update({ content: notes, updated_at: new Date().toISOString() }).eq('id', notesId);
-    } else {
-      const { data } = await supabase.from('dashboard_notes').insert({ content: notes }).select().single();
-      if (data) setNotesId(data.id);
+    try {
+      if (notesId) {
+        await api.dashboard.updateNotes(notesId, notes);
+      } else {
+        const data = await api.dashboard.createNotes(notes);
+        if (data) setNotesId(data.id);
+      }
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('unsaved'), 2000);
+    } catch (error) {
+      console.error('Error saving notes:', error);
+      setSaveStatus('unsaved');
     }
-    setSaveStatus('saved');
-    setTimeout(() => setSaveStatus('unsaved'), 2000);
   }
 
   if (productsLoading || statsLoading) {

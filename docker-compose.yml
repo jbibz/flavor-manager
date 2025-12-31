@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: flavor-junkie-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: flavor_junkie
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./supabase/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - flavor-junkie-network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: flavor-junkie-app
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: flavor_junkie
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      PORT: 3001
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - flavor-junkie-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  flavor-junkie-network:
+    driver: bridge

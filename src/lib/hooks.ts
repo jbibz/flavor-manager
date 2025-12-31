@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from './supabase';
+import { api } from './api';
 import type { Product, Component, Recipe, SalesEvent, ProductionHistory } from './database.types';
 
 export function useProducts() {
@@ -11,11 +11,12 @@ export function useProducts() {
   }, []);
 
   async function loadProducts() {
-    const { data } = await supabase
-      .from('products')
-      .select('*')
-      .order('name');
-    if (data) setProducts(data);
+    try {
+      const data = await api.products.getAll();
+      if (data) setProducts(data);
+    } catch (error) {
+      console.error('Error loading products:', error);
+    }
     setLoading(false);
   }
 
@@ -31,11 +32,11 @@ export function useComponents() {
   }, []);
 
   async function loadComponents() {
-    const { data } = await supabase
-      .from('components')
-      .select('*')
-      .order('category, type');
-    if (data) setComponents(data);
+    try {
+      setComponents([]);
+    } catch (error) {
+      console.error('Error loading components:', error);
+    }
     setLoading(false);
   }
 
@@ -52,13 +53,13 @@ export function useProduct(id: string | undefined) {
   }, [id]);
 
   async function loadProduct(productId: string) {
-    const [productResult, recipeResult] = await Promise.all([
-      supabase.from('products').select('*').eq('id', productId).maybeSingle(),
-      supabase.from('recipes').select('*').eq('product_id', productId).maybeSingle()
-    ]);
-
-    if (productResult.data) setProduct(productResult.data);
-    if (recipeResult.data) setRecipe(recipeResult.data);
+    try {
+      const data = await api.products.getOne(productId);
+      if (data) setProduct(data);
+      setRecipe(null);
+    } catch (error) {
+      console.error('Error loading product:', error);
+    }
     setLoading(false);
   }
 
@@ -74,17 +75,24 @@ export function useSalesEvents(month?: string) {
   }, [month]);
 
   async function loadEvents() {
-    let query = supabase.from('sales_events').select('*').order('event_date', { ascending: false });
+    try {
+      let data = await api.sales.getEvents();
 
-    if (month) {
-      const startDate = `${month}-01`;
-      const endDate = new Date(month + '-01');
-      endDate.setMonth(endDate.getMonth() + 1);
-      query = query.gte('event_date', startDate).lt('event_date', endDate.toISOString().split('T')[0]);
+      if (month && data) {
+        const startDate = `${month}-01`;
+        const endDate = new Date(month + '-01');
+        endDate.setMonth(endDate.getMonth() + 1);
+        const endDateStr = endDate.toISOString().split('T')[0];
+
+        data = data.filter((event: SalesEvent) =>
+          event.event_date >= startDate && event.event_date < endDateStr
+        );
+      }
+
+      if (data) setEvents(data);
+    } catch (error) {
+      console.error('Error loading sales events:', error);
     }
-
-    const { data } = await query;
-    if (data) setEvents(data);
     setLoading(false);
   }
 
@@ -100,14 +108,17 @@ export function useProductionHistory(productId?: string) {
   }, [productId]);
 
   async function loadHistory() {
-    let query = supabase.from('production_history').select('*').order('production_date', { ascending: false });
+    try {
+      let data = await api.production.getAll();
 
-    if (productId) {
-      query = query.eq('product_id', productId);
+      if (productId && data) {
+        data = data.filter((batch: ProductionHistory) => batch.product_id === productId);
+      }
+
+      if (data) setHistory(data);
+    } catch (error) {
+      console.error('Error loading production history:', error);
     }
-
-    const { data } = await query;
-    if (data) setHistory(data);
     setLoading(false);
   }
 
@@ -128,21 +139,12 @@ export function useDashboardStats() {
   }, []);
 
   async function loadStats() {
-    const [salesResult, productsResult] = await Promise.all([
-      supabase.from('sales_events').select('total_revenue'),
-      supabase.from('products').select('current_stock')
-    ]);
-
-    const totalRevenue = salesResult.data?.reduce((sum, e) => sum + Number(e.total_revenue), 0) || 0;
-    const products = productsResult.data || [];
-    const lowStockItems = products.filter(p => p.current_stock < 15).length;
-
-    setStats({
-      totalRevenue,
-      totalSales: salesResult.data?.length || 0,
-      lowStockItems,
-      totalProducts: products.length
-    });
+    try {
+      const data = await api.dashboard.getStats();
+      setStats(data);
+    } catch (error) {
+      console.error('Error loading dashboard stats:', error);
+    }
     setLoading(false);
   }
 
